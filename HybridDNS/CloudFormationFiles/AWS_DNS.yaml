@@ -21,7 +21,6 @@ Resources:
       TTL: '60'
       ResourceRecords:
         - !GetAtt EC2A.PrivateIp
-        - !GetAtt EC2B.PrivateIp
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -115,22 +114,6 @@ Resources:
       Tags:
         - Key: Name
           Value: CDD-AWS-EC2-A
-  EC2B:
-    Type: AWS::EC2::Instance
-    DependsOn: 
-      - ssminterfaceendpoint
-      - ssmec2messagesinterfaceendpoint
-      - ssmmessagesinterfaceendpoint
-    Properties:
-      InstanceType: "t2.micro"
-      ImageId: !Ref LatestAmiId
-      IamInstanceProfile: !Ref EC2InstanceProfile
-      SubnetId: !Ref SubnetPRIVATEB
-      SecurityGroupIds: 
-        - !Ref AWSSecurityGroup
-      Tags:
-        - Key: Name
-          Value: CDD-AWS-EC2-B
   EC2Role:
     Type: 'AWS::IAM::Role'
     Properties:
