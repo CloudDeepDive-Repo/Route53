@@ -127,6 +127,13 @@ Resources:
               file "corp.clouddeepdive.org.zone";
               allow-update { none; };
           };
+          //update INBOUND_ENDPOINT_IP1; INBOUND_ENDPOINT_IP2; with Route53 Resolver inbound endpoint IP addresses
+          zone "aws.clouddeepdive.org"
+          {
+            type forward;
+            forward only;
+            forwarders { INBOUND_ENDPOINT_IP1; INBOUND_ENDPOINT_IP2; };
+          };
           EOF
           cat <<EOF > /var/named/corp.clouddeepdive.org.zone
           \$TTL 86400
