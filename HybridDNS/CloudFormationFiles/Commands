@@ -1,0 +1,18 @@
+Connect to DNS Server and give following commdand to update zonefile on the DNS server-
+cd /etc
+Sudo nano /etc/named.conf - Use this command to update named.conf file with Route53 Resolver inbound endpoint IP addresses.
+Sudo service named restart - Use this command to restart the service
+Nslookup - 127.0.0.1
+web.aws.clouddeepdive.org
+
+
+Use below commands to add DNS server details in APP server -
+sudo nano /etc/sysconfig/network-scripts/ifcfg-eth0
+
+Add below line in the end of the file-
+DNS1 = <IP address of DNS server>
+Sudo reboot - Reboot server.
+
+
+
+
