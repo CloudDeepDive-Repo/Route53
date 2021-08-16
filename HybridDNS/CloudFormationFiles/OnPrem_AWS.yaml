@@ -110,6 +110,7 @@ Resources:
             statistics-file "/var/named/data/named_stats.txt";
             memstatistics-file "/var/named/data/named_mem_stats.txt";
             allow-query { any; };
+            allow-transfer     { localhost; ${DNSB.PrivateIp}; };
             recursion yes;
             forward first;
             forwarders {
@@ -127,12 +128,73 @@ Resources:
               file "corp.clouddeepdive.org.zone";
               allow-update { none; };
           };
-          //update INBOUND_ENDPOINT_IP1; INBOUND_ENDPOINT_IP2; with Route53 Resolver inbound endpoint IP addresses
-          zone "aws.clouddeepdive.org"
-          {
-            type forward;
-            forward only;
-            forwarders { INBOUND_ENDPOINT_IP1; INBOUND_ENDPOINT_IP2; };
+          EOF
+          cat <<EOF > /var/named/corp.clouddeepdive.org.zone
+          \$TTL 86400
+          @   IN  SOA     ns1.mydomain.com. root.mydomain.com. (
+                  2013042201  ;Serial
+                  3600        ;Refresh
+                  1800        ;Retry
+                  604800      ;Expire
+                  86400       ;Minimum TTL
+          )
+          ; Specify our two nameservers
+              IN  NS    dnsA.corp.clouddeepdive.org.
+              IN  NS    dnsB.corp.clouddeepdive.org.
+          ; Resolve nameserver hostnames to IP, replace with your two droplet IP addresses.
+          dnsA    IN  A   1.1.1.1
+          dnsB    IN  A   8.8.8.8
+
+          ; Define hostname -> IP pairs which you wish to resolve
+          @     IN  A   ${APP.PrivateIp}
+          app   IN  A   ${APP.PrivateIp}
+          EOF
+          service named restart
+          chkconfig named on
+  DNSB:
+    Type: AWS::EC2::Instance
+    DependsOn: 
+      - ssminterfaceendpoint
+      - ssmec2messagesinterfaceendpoint
+      - ssmmessagesinterfaceendpoint
+    Properties:
+      InstanceType: "t2.micro"
+      ImageId: !Ref LatestAmiId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SubnetId: !Ref SubnetPRIVATEB
+      SecurityGroupIds: 
+        - !Ref ONPREMSecurityGroup
+      Tags:
+        - Key: Name
+          Value: CDD-ONPREM-DNSB
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y
+          yum install bind bind-utils -y
+          cat <<EOF > /etc/named.conf
+          options {
+            directory "/var/named";
+            dump-file "/var/named/data/cache_dump.db";
+            statistics-file "/var/named/data/named_stats.txt";
+            memstatistics-file "/var/named/data/named_mem_stats.txt";
+            allow-query { any; };
+            recursion yes;
+            forward first;
+            forwarders {
+              192.168.10.2;
+            };
+            dnssec-enable yes;
+            dnssec-validation yes;
+            dnssec-lookaside auto;
+            /* Path to ISC DLV key */
+            bindkeys-file "/etc/named.iscdlv.key";
+            managed-keys-directory "/var/named/dynamic";
+          };
+          zone "corp.clouddeepdive.org" IN {
+              type master;
+              file "corp.clouddeepdive.org.zone";
+              allow-update { none; };
           };
           EOF
           cat <<EOF > /var/named/corp.clouddeepdive.org.zone
@@ -146,8 +208,10 @@ Resources:
           )
           ; Specify our two nameservers
               IN  NS    dnsA.corp.clouddeepdive.org.
+              IN  NS    dnsB.corp.clouddeepdive.org.
           ; Resolve nameserver hostnames to IP, replace with your two droplet IP addresses.
           dnsA    IN  A   1.1.1.1
+          dnsB    IN  A   8.8.8.8
 
           ; Define hostname -> IP pairs which you wish to resolve
           @     IN  A   ${APP.PrivateIp}
