@@ -11,7 +11,8 @@ sudo nano /etc/sysconfig/network-scripts/ifcfg-eth0
 
 Add below line in the end of the file-
 DNS1 = <IP address of DNS server>
-sudo reboot - Reboot server.
+sudo reboot - to reboot the app server, you will need to connect to the server again.
+
 
 
 
